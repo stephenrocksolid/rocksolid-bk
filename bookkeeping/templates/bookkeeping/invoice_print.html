@@ -1,0 +1,244 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {{ invoice.invoice_number }} - Print</title>
+    <style>
+        @page {
+            size: Letter;
+            margin: 1in 0.75in 1in 0.75in; /* top right bottom left */
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #fafbfc;
+            color: #111;
+            margin: 0;
+            padding: 0;
+            font-size: 12pt;
+        }
+        .invoice-wrap {
+            background: #fff;
+            width: 100%;
+            min-height: 9in;
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+            padding: 0;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .company-info {
+            max-width: 320px;
+        }
+        .company-logo {
+            width: 250px;
+            margin-bottom: 12px;
+        }
+        .company-name {
+            font-size: 14pt;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        .invoice-title {
+            font-size: 24pt;
+            font-weight: 700;
+            text-align: right;
+            margin-bottom: 0.5rem;
+        }
+        .invoice-number {
+            font-size: 12pt;
+            color: #222;
+            text-align: right;
+        }
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 32px 0 16px 0;
+        }
+        .billto-block {
+            min-width: 260px;
+        }
+        .billto-label {
+            font-size: 13pt;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .dates-block {
+            text-align: right;
+        }
+        .dates-block .label {
+            font-weight: 700;
+            margin-right: 8px;
+            font-size: 12pt;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+        }
+        .items-table th, .items-table td {
+            padding: 12px 8px;
+            text-align: left;
+            font-size: 12pt;
+        }
+        .items-table th {
+            border-bottom: 2px solid #222;
+            font-weight: 700;
+            font-size: 13pt;
+        }
+        .items-table td {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .items-table th.text-right, .items-table td.text-right {
+            text-align: right;
+        }
+        .summary-table {
+            margin-left: auto;
+            margin-top: 32px;
+            min-width: 320px;
+            border-collapse: collapse;
+        }
+        .summary-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #888;
+            font-size: 12pt;
+        }
+        .summary-table tr:last-child td {
+            border-bottom: none;
+        }
+        .summary-table .highlight {
+            background: #f7f71a;
+            font-weight: 700;
+            color: #111;
+            font-size: 13pt;
+        }
+        .summary-table .label {
+            font-weight: 700;
+            font-size: 12pt;
+        }
+        .terms {
+            margin-top: 48px;
+            font-size: 13pt;
+            font-weight: 700;
+        }
+        .terms span {
+            font-weight: 400;
+            font-size: 12pt;
+        }
+        @media print {
+            body, .invoice-wrap {
+                background: #fff !important;
+                box-shadow: none !important;
+            }
+            .invoice-wrap {
+                width: 100% !important;
+                min-height: 9in !important;
+                margin: 0 auto !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+            }
+        }
+    </style>
+    {% if pdf_mode %}
+    <style>
+        .company-name { font-size: 12pt !important; }
+        .invoice-title { font-size: 22pt !important; }
+        .invoice-number { font-size: 11pt !important; }
+        .company-info, .company-info div { font-size: 11pt !important; }
+        .billto-block, .billto-block div { font-size: 11pt !important; }
+        .dates-block, .dates-block > div { font-size: 11pt !important; }
+        .billto-label { font-size: 11pt !important; }
+        .dates-block .label { font-size: 10pt !important; }
+        .items-table th, .items-table td { font-size: 10pt !important; }
+        .items-table th { font-size: 11pt !important; }
+        .summary-table td { font-size: 10pt !important; }
+        .summary-table .highlight { font-size: 11pt !important; }
+        .summary-table .label { font-size: 10pt !important; }
+        .terms { font-size: 11pt !important; }
+        .terms span { font-size: 10pt !important; }
+    </style>
+    {% endif %}
+    <script>
+        window.onload = function() {
+            window.print();
+        };
+    </script>
+</head>
+<body>
+<div class="invoice-wrap">
+    <div class="header-row">
+        <div class="company-info">
+            <img src="{% static 'bookkeeping/img/RSD_Logo.jpg' %}" alt="Logo" class="company-logo" onerror="this.style.display='none'">
+            <div>PO Box 321,<br>Perry, NY 14530<br>{{ company_email }}<br>{{ company_phone }}</div>
+        </div>
+        <div>
+            <div class="invoice-title">INVOICE</div>
+            <div class="invoice-number">{{ invoice.invoice_number }}</div>
+        </div>
+    </div>
+    <div class="meta-row">
+        <div class="billto-block">
+            <div class="billto-label">Bill To</div>
+            <div>{{ invoice.customer.name }}</div>
+            <div>{{ invoice.customer.address|default:'-' }}</div>
+            <div>{{ invoice.customer.city|default:'' }}{% if invoice.customer.city and invoice.customer.zip_code %}, {% endif %}{{ invoice.customer.zip_code|default:'' }}</div>
+            <div>{{ invoice.customer.phone|default:'-' }}</div>
+        </div>
+        <div class="dates-block">
+            <div><span class="label">Date</span> {{ invoice.issue_date|date:'d M, Y' }}</div>
+            <div><span class="label">Due Date</span> {{ invoice.due_date|date:'d M, Y' }}</div>
+        </div>
+    </div>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Rate</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in invoice.items.all %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td class="text-right">{{ item.quantity }}</td>
+                <td class="text-right">${{ item.unit_price|floatformat:2 }}</td>
+                <td class="text-right">${{ item.total|floatformat:2 }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <table class="summary-table">
+        <tr>
+            <td class="label">Total</td>
+            <td class="text-right">${{ invoice.total_amount|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td class="label">Finance Charge</td>
+            <td class="text-right">${{ finance_charge|default:'0.00'|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td class="label">Payment/Credits</td>
+            <td class="text-right">${{ total_payments|default:'0.00'|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td class="highlight">Balance Due</td>
+            <td class="highlight text-right">${{ balance_due|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td class="label">Account Balance</td>
+            <td class="text-right">${{ invoice.customer.current_balance|default:'0.00'|floatformat:2 }}</td>
+        </tr>
+    </table>
+    <div class="terms">
+        Terms &amp; Conditions<br>
+        <span style="font-weight:400; font-size:1rem;">{{ invoice.terms|default:'-' }}</span>
+    </div>
+</div>
+</body>
+</html> 

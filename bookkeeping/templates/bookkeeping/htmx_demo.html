@@ -1,0 +1,41 @@
+{% extends 'bookkeeping/base.html' %}
+
+{% block title %}HTMX Demo - Bookkeeping App{% endblock %}
+
+{% block content %}
+<h1>HTMX Demo</h1>
+<p>This page demonstrates HTMX functionality with a dynamic button that updates content without page refresh.</p>
+
+<div class="result">
+    <h3>How it works:</h3>
+    <ul>
+        <li>The button below uses HTMX attributes to make AJAX requests</li>
+        <li>When clicked, it sends a request to the server</li>
+        <li>The server responds with HTML that replaces the target element</li>
+        <li>No JavaScript required - it's all handled by HTMX!</li>
+    </ul>
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <button 
+        class="btn"
+        hx-post="{% url 'bookkeeping:button_click' %}"
+        hx-target="#result-area"
+        hx-swap="innerHTML">
+        Click me for a random number!
+    </button>
+</div>
+
+<div id="result-area" class="result">
+    <p>Click the button above to see HTMX in action!</p>
+</div>
+
+<div class="result">
+    <h3>HTMX Attributes Used:</h3>
+    <ul>
+        <li><code>hx-post</code>: Makes a POST request to the specified URL</li>
+        <li><code>hx-target</code>: Specifies which element to update with the response</li>
+        <li><code>hx-swap</code>: Defines how to insert the response (innerHTML replaces content)</li>
+    </ul>
+</div>
+{% endblock %} 

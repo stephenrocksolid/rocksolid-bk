@@ -1,0 +1,285 @@
+{% extends 'bookkeeping/base.html' %}
+
+{% block title %}{{ customer.name }} - Customer Details{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'bookkeeping:home' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'bookkeeping:customer_list' %}">Customers</a></li>
+                <li class="breadcrumb-item active">{{ customer.name }}</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">{{ customer.name }}</h1>
+                <p class="text-muted">
+                    Customer since {{ customer.created_at|date:"M d, Y" }}
+                    {% if customer.tax_id %} • Tax ID: {{ customer.tax_id }}{% endif %}
+                </p>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="{% url 'bookkeeping:customer_update' customer.id %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </a>
+                <a href="{% url 'bookkeeping:invoice_create' %}?customer={{ customer.id }}" class="btn btn-success">
+                    <i class="fas fa-file-invoice me-1"></i>Create Invoice
+                </a>
+                <a href="{% url 'bookkeeping:payment_create' %}?customer={{ customer.id }}" class="btn btn-info">
+                    <i class="fas fa-credit-card me-1"></i>Record Payment
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-file-invoice fa-2x text-primary mb-2"></i>
+                <div class="h4 mb-0">{{ invoices.count }}</div>
+                <small class="text-muted">Total Invoices</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-credit-card fa-2x text-success mb-2"></i>
+                <div class="h4 mb-0">{{ payments.count }}</div>
+                <small class="text-muted">Total Payments</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-dollar-sign fa-2x text-info mb-2"></i>
+                <div class="h4 mb-0">${{ total_invoiced|floatformat:2 }}</div>
+                <small class="text-muted">Total Invoiced</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-balance-scale fa-2x {% if customer.current_balance > 0 %}text-danger{% else %}text-success{% endif %} mb-2"></i>
+                <div class="h4 mb-0 {% if customer.current_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                    ${{ customer.current_balance|floatformat:2 }}
+                </div>
+                <small class="text-muted">Current Balance</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Customer Information -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>Customer Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Name:</strong><br>
+                    {{ customer.name }}
+                </div>
+                
+                {% if customer.email %}
+                <div class="mb-3">
+                    <strong>Email:</strong><br>
+                    <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
+                </div>
+                {% endif %}
+                
+                {% if customer.phone %}
+                <div class="mb-3">
+                    <strong>Phone:</strong><br>
+                    <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
+                </div>
+                {% endif %}
+                
+                {% if customer.full_address %}
+                <div class="mb-3">
+                    <strong>Address:</strong><br>
+                    {{ customer.full_address }}
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <strong>Payment Terms:</strong><br>
+                    <span class="badge bg-light text-dark">{{ customer.get_payment_terms_display }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Credit Limit:</strong><br>
+                    ${{ customer.credit_limit|floatformat:2 }}
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Status:</strong><br>
+                    <span class="badge {% if customer.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                        {% if customer.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+                
+                {% if customer.notes %}
+                <div class="mb-3">
+                    <strong>Notes:</strong><br>
+                    {{ customer.notes|linebreaks }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Invoices -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-invoice me-2"></i>Invoice History
+                </h5>
+                <a href="{% url 'bookkeeping:invoice_create' %}?customer={{ customer.id }}" class="btn btn-sm btn-success">
+                    <i class="fas fa-plus me-1"></i>New Invoice
+                </a>
+            </div>
+            <div class="card-body">
+                {% if invoices %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Date</th>
+                                    <th>Due Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in invoices %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'bookkeeping:invoice_detail' invoice.id %}" class="text-decoration-none">
+                                            {{ invoice.invoice_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ invoice.issue_date|date:"M d, Y" }}</td>
+                                    <td>{{ invoice.due_date|date:"M d, Y" }}</td>
+                                    <td>${{ invoice.total_amount|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="badge status-badge 
+                                            {% if invoice.status == 'paid' %}bg-success
+                                            {% elif invoice.status == 'overdue' %}bg-danger
+                                            {% elif invoice.status == 'open' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ invoice.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'bookkeeping:invoice_detail' invoice.id %}" 
+                                               class="btn btn-sm btn-outline-primary" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if invoice.status != 'paid' %}
+                                            <a href="{% url 'bookkeeping:payment_create' %}?invoice={{ invoice.id }}" 
+                                               class="btn btn-sm btn-outline-success" title="Record Payment">
+                                                <i class="fas fa-credit-card"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No invoices yet</h6>
+                        <p class="text-muted">Create the first invoice for this customer.</p>
+                        <a href="{% url 'bookkeeping:invoice_create' %}?customer={{ customer.id }}" class="btn btn-success">
+                            <i class="fas fa-plus me-1"></i>Create First Invoice
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment History -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-credit-card me-2"></i>Payment History
+                </h5>
+                <a href="{% url 'bookkeeping:payment_create' %}?customer={{ customer.id }}" class="btn btn-sm btn-info">
+                    <i class="fas fa-plus me-1"></i>Record Payment
+                </a>
+            </div>
+            <div class="card-body">
+                {% if payments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Reference</th>
+                                    <th>Invoice</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                <tr>
+                                    <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                                    <td class="text-success">${{ payment.amount|floatformat:2 }}</td>
+                                    <td>{{ payment.get_payment_method_display }}</td>
+                                    <td>{{ payment.reference_number|default:"-" }}</td>
+                                    <td>
+                                        {% if payment.invoice %}
+                                            <a href="{% url 'bookkeeping:invoice_detail' payment.invoice.id %}">
+                                                {{ payment.invoice.invoice_number }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">General</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ payment.notes|default:"-"|truncatechars:30 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No payments recorded</h6>
+                        <p class="text-muted">Record the first payment for this customer.</p>
+                        <a href="{% url 'bookkeeping:payment_create' %}?customer={{ customer.id }}" class="btn btn-info">
+                            <i class="fas fa-plus me-1"></i>Record First Payment
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

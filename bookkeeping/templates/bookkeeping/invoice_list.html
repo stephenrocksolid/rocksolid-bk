@@ -1,0 +1,207 @@
+{% extends 'bookkeeping/base.html' %}
+
+{% block title %}Invoices - RockSolid Bookkeeping{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 mb-0">Invoices</h1>
+            <p class="text-muted">Manage your invoices and track payments</p>
+        </div>
+        <a href="{% url 'bookkeeping:invoice_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Create Invoice
+        </a>
+    </div>
+</div>
+
+<!-- Search and Filter Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-control" id="status" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                    <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Open</option>
+                    <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                    <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
+                    <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="customer" class="form-label">Customer</label>
+                <input type="text" class="form-control" id="customer" name="customer" 
+                       value="{{ customer_filter }}" placeholder="Filter by customer...">
+            </div>
+            <div class="col-md-2">
+                <label for="date_from" class="form-label">From Date</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label for="date_to" class="form-label">To Date</label>
+                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search me-1"></i>Filter
+                </button>
+                <a href="{% url 'bookkeeping:invoice_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Invoices Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-file-invoice me-2"></i>Invoice List
+            {% if page_obj %}
+                <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count }} total</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Customer</th>
+                            <th>Issue Date</th>
+                            <th>Due Date</th>
+                            <th>Amount</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in page_obj %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'bookkeeping:invoice_detail' invoice.id %}" class="text-decoration-none fw-bold">
+                                    {{ invoice.invoice_number }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{% url 'bookkeeping:customer_detail' invoice.customer.id %}" class="text-decoration-none">
+                                    {{ invoice.customer.name }}
+                                </a>
+                            </td>
+                            <td>{{ invoice.issue_date|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="{% if invoice.is_overdue %}text-danger{% endif %}">
+                                    {{ invoice.due_date|date:"M d, Y" }}
+                                </span>
+                            </td>
+                            <td>${{ invoice.total_amount|floatformat:2 }}</td>
+                            <td>
+                                <span class="{% if invoice.balance_due > 0 %}balance-negative{% else %}balance-positive{% endif %}">
+                                    ${{ invoice.balance_due|floatformat:2 }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge status-badge 
+                                    {% if invoice.status == 'paid' %}bg-success
+                                    {% elif invoice.status == 'overdue' %}bg-danger
+                                    {% elif invoice.status == 'open' %}bg-warning
+                                    {% elif invoice.status == 'draft' %}bg-secondary
+                                    {% else %}bg-dark{% endif %}">
+                                    {{ invoice.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'bookkeeping:invoice_detail' invoice.id %}" 
+                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'bookkeeping:invoice_update' invoice.id %}" 
+                                       class="btn btn-sm btn-outline-secondary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if invoice.status != 'paid' %}
+                                    <a href="{% url 'bookkeeping:payment_create' %}?invoice={{ invoice.id }}" 
+                                       class="btn btn-sm btn-outline-success" title="Record Payment">
+                                        <i class="fas fa-credit-card"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Invoice pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No invoices found</h5>
+                <p class="text-muted">
+                    {% if status_filter or customer_filter or date_from or date_to %}
+                        Try adjusting your filter criteria or 
+                        <a href="{% url 'bookkeeping:invoice_list' %}">clear all filters</a>.
+                    {% else %}
+                        Get started by creating your first invoice.
+                    {% endif %}
+                </p>
+                <a href="{% url 'bookkeeping:invoice_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Create First Invoice
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

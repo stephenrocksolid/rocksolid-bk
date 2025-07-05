@@ -1,0 +1,7 @@
+<div class="totals">
+  <p>Subtotal: ${{ invoice.subtotal|floatformat:2 }}</p>
+  <p>Tax: ${{ invoice.tax_amount|floatformat:2 }}</p>
+  <p>Total: ${{ invoice.total_amount|floatformat:2 }}</p>
+  <p>Amount Paid: ${{ invoice.amount_paid|floatformat:2 }}</p>
+  <p><strong>Balance Due: ${{ invoice.balance_due|floatformat:2 }}</strong></p>
+</div> 

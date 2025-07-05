@@ -1,0 +1,420 @@
+{% extends 'bookkeeping/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - RockSolid Bookkeeping{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'bookkeeping:home' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'bookkeeping:invoice_list' %}">Invoices</a></li>
+                <li class="breadcrumb-item active">{{ title }}</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">{{ title }}</h1>
+                <p class="text-muted">
+                    {% if invoice %}
+                        Update invoice {{ invoice.invoice_number }}
+                    {% else %}
+                        Create a new invoice for your customer
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{% url 'bookkeeping:invoice_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Invoices
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-invoice me-2"></i>Invoice Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Invoice Header -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">Invoice Details</h6>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                Customer <span class="text-danger">*</span>
+                            </label>
+                            <select name="customer" id="id_customer" class="form-control">
+                                {% for option in form.customer.field.choices %}
+                                    <option value="{{ option.0 }}" {% if option.0 == form.customer.value %}selected{% endif %}>{{ option.1 }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.customer.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.customer.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.status.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.issue_date.id_for_label }}" class="form-label">
+                                Issue Date <span class="text-danger">*</span>
+                            </label>
+                            {% now 'Y-m-d' as now %}
+                            <input type="date" name="{{ form.issue_date.name }}" id="{{ form.issue_date.id_for_label }}"
+                                   class="form-control"
+                                   value="{% if form.issue_date.value %}{{ form.issue_date.value }}{% elif form.issue_date.initial %}{{ form.issue_date.initial|date:'Y-m-d' }}{% else %}{{ now }}{% endif %}">
+                            {% if form.issue_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.issue_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.due_date.id_for_label }}" class="form-label">
+                                Due Date <span class="text-danger">*</span>
+                            </label>
+                            <div id="due-date-container">
+                                {{ form.due_date }}
+                            </div>
+                            {% if form.due_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.due_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Invoice Items -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">Invoice Items</h6>
+                            {{ formset.management_form }}
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="invoice-items-table">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 40%">Description</th>
+                                            <th style="width: 15%">Quantity</th>
+                                            <th style="width: 20%">Unit Price</th>
+                                            <th style="width: 15%">Total</th>
+                                            <th style="width: 10%">Delete</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="invoice-items-tbody">
+                                        {% for form in formset %}
+                                        <tr class="invoice-item-row">
+                                            <td>
+                                                {{ form.description }}
+                                                {% if form.description.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {% for error in form.description.errors %}
+                                                            {{ error }}
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ form.quantity }}
+                                                {% if form.quantity.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {% for error in form.quantity.errors %}
+                                                            {{ error }}
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ form.unit_price }}
+                                                {% if form.unit_price.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {% for error in form.unit_price.errors %}
+                                                            {{ error }}
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="item-total">$0.00</span>
+                                            </td>
+                                            <td class="text-center">
+                                                {% if formset.can_delete %}
+                                                    <button type="button" class="btn btn-outline-danger btn-lg delete-item-btn" title="Delete Item" style="font-size: 2rem; padding: 1rem 1.5rem;">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                    {{ form.DELETE }}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="add-item-btn">
+                                <i class="fas fa-plus me-1"></i>Add Item
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Financial Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">Financial Information</h6>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.tax_rate.id_for_label }}" class="form-label">Tax Rate (%)</label>
+                            {{ form.tax_rate }}
+                            {% if form.tax_rate.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.tax_rate.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.discount_amount.id_for_label }}" class="form-label">Discount Amount</label>
+                            {{ form.discount_amount }}
+                            {% if form.discount_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.discount_amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.finance_charge.id_for_label }}" class="form-label">Finance Charge</label>
+                            {{ form.finance_charge }}
+                            {% if form.finance_charge.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.finance_charge.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Subtotal</label>
+                            <div class="form-control-plaintext" id="subtotal-display">$0.00</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tax Amount</label>
+                            <div class="form-control-plaintext" id="tax-display">$0.00</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Total</label>
+                            <div class="form-control-plaintext fw-bold" id="total-display">$0.00</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">Additional Information</h6>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="{{ form.terms.id_for_label }}" class="form-label">Terms & Conditions</label>
+                            <div id="terms-container">
+                                {{ form.terms }}
+                            </div>
+                            {% if form.terms.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.terms.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="row">
+                        <div class="col-12">
+                            <hr class="my-4">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'bookkeeping:invoice_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>
+                                    {% if invoice %}Update Invoice{% else %}Create Invoice{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'bookkeeping:customer_create' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-plus me-1"></i>Add New Customer
+                    </a>
+                    {% if invoice %}
+                        <a href="{% url 'bookkeeping:invoice_detail' invoice.id %}" class="btn btn-outline-info">
+                            <i class="fas fa-eye me-1"></i>View Invoice
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if invoice %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Invoice Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <div class="h4 mb-0 text-primary">{{ invoice.items.count }}</div>
+                            <small class="text-muted">Items</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 mb-0 text-success">${{ invoice.total_amount|floatformat:2 }}</div>
+                        <small class="text-muted">Total Amount</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bookkeeping/js/invoice_form.js' %}?v=5"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customerSelect = document.getElementById('id_customer');
+    const issueDateInput = document.getElementById('id_issue_date');
+    
+    // Function to update due date when customer changes
+    function updateDueDate() {
+        const customerId = customerSelect.value;
+        const issueDate = issueDateInput.value;
+        
+        console.log('updateDueDate called:', { customerId, issueDate });
+        
+        if (customerId && issueDate) {
+            const url = `/api/customer/${customerId}/due-date/partial/?issue_date=${issueDate}`;
+            console.log('Making HTMX request to:', url);
+            
+            // Use fetch instead of htmx.ajax for more control
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    console.log('Received HTML:', html);
+                    const container = document.getElementById('due-date-container');
+                    if (container) {
+                        container.innerHTML = html;
+                        console.log('Updated due date container');
+                    } else {
+                        console.error('Due date container not found');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating due date:', error);
+                });
+        } else {
+            console.log('Missing customerId or issueDate:', { customerId, issueDate });
+        }
+    }
+    
+    // Function to update terms when customer changes
+    function updateTerms() {
+        const customerId = customerSelect.value;
+        
+        console.log('updateTerms called:', { customerId });
+        
+        if (customerId) {
+            const url = `/api/customer/${customerId}/terms/partial/`;
+            console.log('Making HTMX request to:', url);
+            
+            // Use fetch instead of htmx.ajax for more control
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    console.log('Received terms HTML:', html);
+                    const container = document.getElementById('terms-container');
+                    if (container) {
+                        container.innerHTML = html;
+                        console.log('Updated terms container');
+                    } else {
+                        console.error('Terms container not found');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating terms:', error);
+                });
+        } else {
+            console.log('Missing customerId:', { customerId });
+        }
+    }
+    
+    // Listen for customer selection changes
+    customerSelect.addEventListener('change', function() {
+        updateDueDate();
+        updateTerms();
+    });
+    
+    // Also update when issue date changes (if customer is already selected)
+    issueDateInput.addEventListener('change', function() {
+        if (customerSelect.value) {
+            updateDueDate();
+        }
+    });
+});
+</script>
+{% endblock %} 

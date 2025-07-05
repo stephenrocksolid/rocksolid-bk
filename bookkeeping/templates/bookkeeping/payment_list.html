@@ -1,0 +1,193 @@
+{% extends 'bookkeeping/base.html' %}
+
+{% block title %}Payments - RockSolid Bookkeeping{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 mb-0">Payments</h1>
+            <p class="text-muted">Track all customer payments</p>
+        </div>
+        <a href="{% url 'bookkeeping:payment_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Record Payment
+        </a>
+    </div>
+</div>
+
+<!-- Search and Filter Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="customer" class="form-label">Customer</label>
+                <input type="text" class="form-control" id="customer" name="customer" 
+                       value="{{ customer_filter }}" placeholder="Filter by customer...">
+            </div>
+            <div class="col-md-3">
+                <label for="method" class="form-label">Payment Method</label>
+                <select class="form-control" id="method" name="method">
+                    <option value="">All Methods</option>
+                    <option value="check" {% if method_filter == 'check' %}selected{% endif %}>Check</option>
+                    <option value="credit_card" {% if method_filter == 'credit_card' %}selected{% endif %}>Credit Card</option>
+                    <option value="bank_transfer" {% if method_filter == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+                    <option value="cash" {% if method_filter == 'cash' %}selected{% endif %}>Cash</option>
+                    <option value="other" {% if method_filter == 'other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="sort" class="form-label">Sort By</label>
+                <select class="form-control" id="sort" name="sort">
+                    <option value="-payment_date" {% if sort_by == '-payment_date' %}selected{% endif %}>Date (Newest)</option>
+                    <option value="payment_date" {% if sort_by == 'payment_date' %}selected{% endif %}>Date (Oldest)</option>
+                    <option value="-amount" {% if sort_by == '-amount' %}selected{% endif %}>Amount (Highest)</option>
+                    <option value="amount" {% if sort_by == 'amount' %}selected{% endif %}>Amount (Lowest)</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search me-1"></i>Filter
+                </button>
+                <a href="{% url 'bookkeeping:payment_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Payments Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-credit-card me-2"></i>Payment List
+            {% if page_obj %}
+                <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count }} total</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th>Invoice</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in page_obj %}
+                        <tr>
+                            <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'bookkeeping:customer_detail' payment.customer.id %}" class="text-decoration-none">
+                                    {{ payment.customer.name }}
+                                </a>
+                            </td>
+                            <td class="text-success fw-bold">${{ payment.amount|floatformat:2 }}</td>
+                            <td>
+                                <span class="badge bg-light text-dark">{{ payment.get_payment_method_display }}</span>
+                            </td>
+                            <td>{{ payment.reference_number|default:"-" }}</td>
+                            <td>
+                                {% if payment.invoice %}
+                                    <a href="{% url 'bookkeeping:invoice_detail' payment.invoice.id %}" class="text-decoration-none">
+                                        {{ payment.invoice.invoice_number }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">General</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ payment.notes|default:"-"|truncatechars:30 }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'bookkeeping:customer_detail' payment.customer.id %}" 
+                                       class="btn btn-sm btn-outline-primary" title="View Customer">
+                                        <i class="fas fa-user"></i>
+                                    </a>
+                                    {% if payment.invoice %}
+                                    <a href="{% url 'bookkeeping:invoice_detail' payment.invoice.id %}" 
+                                       class="btn btn-sm btn-outline-info" title="View Invoice">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Payment pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if method_filter %}&method={{ method_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if method_filter %}&method={{ method_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if method_filter %}&method={{ method_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if method_filter %}&method={{ method_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if method_filter %}&method={{ method_filter }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No payments found</h5>
+                <p class="text-muted">
+                    {% if customer_filter or method_filter %}
+                        Try adjusting your filter criteria or 
+                        <a href="{% url 'bookkeeping:payment_list' %}">clear all filters</a>.
+                    {% else %}
+                        Get started by recording your first payment.
+                    {% endif %}
+                </p>
+                <a href="{% url 'bookkeeping:payment_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Record First Payment
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,232 @@
+{% extends 'bookkeeping/base.html' %}
+{% load static %}
+
+{% block title %}Record Payment - RockSolid Bookkeeping{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'bookkeeping:home' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'bookkeeping:payment_list' %}">Payments</a></li>
+                <li class="breadcrumb-item active">Record Payment</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">Record Payment</h1>
+                <p class="text-muted">Record a payment for a customer</p>
+            </div>
+            <a href="{% url 'bookkeeping:payment_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Payments
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-credit-card me-2"></i>Payment Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Payment Details -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">Payment Details</h6>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                Customer <span class="text-danger">*</span>
+                            </label>
+                            <select name="customer" id="id_customer" class="form-control"
+                                    hx-get="/api/customer/{value}/balance/partial/"
+                                    hx-target="#customer-balance-info"
+                                    hx-trigger="change"
+                                    hx-swap="innerHTML"
+                                    hx-on="htmx:afterRequest:document.getElementById('invoice-balance-info').innerHTML=''">
+                                {% for option in form.customer.field.choices %}
+                                    <option value="{{ option.0 }}" {% if option.0 == form.customer.value %}selected{% endif %}>{{ option.1 }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.customer.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.customer.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.invoice.id_for_label }}" class="form-label">Invoice (Optional)</label>
+                            <select name="invoice" id="id_invoice" class="form-control"
+                                    hx-get="/api/invoice/{value}/totals/partial/"
+                                    hx-target="#invoice-balance-info"
+                                    hx-trigger="change"
+                                    hx-swap="innerHTML">
+                                <option value="">---------</option>
+                                {% for option in form.invoice.field.choices %}
+                                    <option value="{{ option.0 }}" {% if option.0 == form.invoice.value %}selected{% endif %}>{{ option.1 }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.invoice.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.invoice.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Leave blank for general payment</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.amount.id_for_label }}" class="form-label">
+                                Amount <span class="text-danger">*</span>
+                            </label>
+                            {{ form.amount }}
+                            {% if form.amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.payment_date.id_for_label }}" class="form-label">
+                                Payment Date <span class="text-danger">*</span>
+                            </label>
+                            {{ form.payment_date }}
+                            {% if form.payment_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.payment_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.payment_method.id_for_label }}" class="form-label">
+                                Payment Method <span class="text-danger">*</span>
+                            </label>
+                            {{ form.payment_method }}
+                            {% if form.payment_method.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.payment_method.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.reference_number.id_for_label }}" class="form-label">Reference Number</label>
+                            {{ form.reference_number }}
+                            {% if form.reference_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.reference_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Check number, transaction ID, etc.</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">Additional Information</h6>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="row">
+                        <div class="col-12">
+                            <hr class="my-4">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'bookkeeping:payment_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Record Payment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'bookkeeping:customer_create' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-plus me-1"></i>Add New Customer
+                    </a>
+                    <a href="{% url 'bookkeeping:invoice_create' %}" class="btn btn-outline-success">
+                        <i class="fas fa-file-invoice me-1"></i>Create Invoice
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Customer Balance Info -->
+        <div class="card mt-3" id="customer-balance-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-balance-scale me-2"></i>Customer Balance
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="customer-balance-info">
+                    <!-- Will be populated by HTMX -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Invoice Balance Info -->
+        <div class="card mt-3" id="invoice-balance-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-invoice me-2"></i>Invoice Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="invoice-balance-info">
+                    <!-- Will be populated by HTMX -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bookkeeping/js/payment_form.js' %}"></script>
+{% endblock %} 

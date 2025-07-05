@@ -1,0 +1,4 @@
+<option value="">---------</option>
+{% for inv in invoices %}
+  <option value="{{ inv.id }}">{{ inv.invoice_number }} - ${{ inv.balance_due|floatformat:2 }} due {{ inv.due_date|date:'Y-m-d' }}</option>
+{% endfor %} 
