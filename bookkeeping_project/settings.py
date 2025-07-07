@@ -25,8 +25,8 @@ SECRET_KEY = 'django-insecure-*gx_)5p3n5$j+)6sbkt=vm*l2l^+qxuf++(atp#@g0g0wom!=#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['167.71.249.156', 'localhost', '127.0.0.1']
-
+# ALLOWED_HOSTS = ['167.71.249.156', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['rocksoliddata.solutions', 'www.rocksoliddata.solutions']
 
 # Application definition
 
