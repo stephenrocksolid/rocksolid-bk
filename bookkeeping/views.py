@@ -20,8 +20,14 @@ from .models import Customer, Invoice, InvoiceItem, Payment
 from .forms import CustomerForm, InvoiceForm, InvoiceItemFormSet, PaymentForm
 
 
-def home(request):
-    """Home page with dashboard overview"""
+def landing_page(request):
+    """Public landing page with RockSolid Data information"""
+    return render(request, 'bookkeeping/landing.html')
+
+
+@login_required
+def dashboard(request):
+    """Dashboard page with overview - requires login"""
     # Get summary statistics
     total_customers = Customer.objects.filter(is_active=True).count()
     total_invoices = Invoice.objects.count()
@@ -47,7 +53,16 @@ def home(request):
         'recent_payments': recent_payments,
         'overdue_invoices': overdue_invoices,
     }
-    return render(request, 'bookkeeping/home.html', context)
+    return render(request, 'bookkeeping/dashboard.html', context)
+
+
+# Legacy home view - redirect to dashboard for logged in users, landing page for others
+def home(request):
+    """Legacy home view - redirects appropriately"""
+    if request.user.is_authenticated:
+        return redirect('bookkeeping:dashboard')
+    else:
+        return redirect('bookkeeping:landing_page')
 
 
 # Customer Views

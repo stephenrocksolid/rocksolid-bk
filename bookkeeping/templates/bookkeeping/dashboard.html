@@ -1,0 +1,305 @@
+{% extends 'bookkeeping/base.html' %}
+
+{% block title %}Dashboard - RockSolid Bookkeeping{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Dashboard</h1>
+        <p class="text-muted">Welcome to your invoicing system</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <div class="stats-number">{{ total_customers }}</div>
+                <div class="text-white-50">Active Customers</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-file-invoice fa-2x mb-2"></i>
+                <div class="stats-number">{{ total_invoices }}</div>
+                <div class="text-white-50">Total Invoices</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                <div class="stats-number">${{ total_receivables|floatformat:0 }}</div>
+                <div class="text-white-50">Outstanding Receivables</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <div class="stats-number">{{ overdue_invoices|length }}</div>
+                <div class="text-white-50">Overdue Invoices</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity and Quick Actions -->
+<div class="row">
+    <!-- Recent Invoices -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-invoice me-2"></i>Recent Invoices
+                </h5>
+                <a href="{% url 'bookkeeping:invoice_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_invoices %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Customer</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for invoice in recent_invoices %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'bookkeeping:invoice_detail' invoice.id %}" class="text-decoration-none">
+                                            {{ invoice.invoice_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ invoice.customer.name }}</td>
+                                    <td>${{ invoice.total_amount|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="badge status-badge 
+                                            {% if invoice.status == 'paid' %}bg-success
+                                            {% elif invoice.status == 'overdue' %}bg-danger
+                                            {% elif invoice.status == 'open' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ invoice.status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-3">No invoices yet. <a href="{% url 'bookkeeping:invoice_create' %}">Create your first invoice</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Payments -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-credit-card me-2"></i>Recent Payments
+                </h5>
+                <a href="{% url 'bookkeeping:payment_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_payments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in recent_payments %}
+                                <tr>
+                                    <td>{{ payment.customer.name }}</td>
+                                    <td class="text-success">${{ payment.amount|floatformat:2 }}</td>
+                                    <td>{{ payment.get_payment_method_display }}</td>
+                                    <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-3">No payments recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overdue Invoices Alert -->
+{% if overdue_invoices %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Overdue Invoices
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Invoice</th>
+                                <th>Customer</th>
+                                <th>Due Date</th>
+                                <th>Amount</th>
+                                <th>Days Overdue</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in overdue_invoices %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'bookkeeping:invoice_detail' invoice.id %}" class="text-decoration-none">
+                                        {{ invoice.invoice_number }}
+                                    </a>
+                                </td>
+                                <td>{{ invoice.customer.name }}</td>
+                                <td>{{ invoice.due_date|date:"M d, Y" }}</td>
+                                <td>${{ invoice.total_amount|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge bg-danger">
+                                        {{ invoice.due_date|timesince }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'bookkeeping:payment_create' %}?invoice={{ invoice.id }}" 
+                                       class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-credit-card me-1"></i>Record Payment
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4 justify-content-center">
+                    <div class="col-md-3">
+                        <a href="{% url 'bookkeeping:customer_create' %}" class="btn btn-primary btn-lg w-100 d-flex flex-column align-items-center justify-content-center quick-action-btn">
+                            <i class="fas fa-user-plus fa-2x mb-2"></i>
+                            <span class="fw-bold fs-5">Add New Customer</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'bookkeeping:invoice_create' %}" class="btn btn-success btn-lg w-100 d-flex flex-column align-items-center justify-content-center quick-action-btn">
+                            <i class="fas fa-file-invoice fa-2x mb-2"></i>
+                            <span class="fw-bold fs-5">Create Invoice</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'bookkeeping:payment_create' %}" class="btn btn-info btn-lg w-100 d-flex flex-column align-items-center justify-content-center quick-action-btn">
+                            <i class="fas fa-credit-card fa-2x mb-2"></i>
+                            <span class="fw-bold fs-5">Record Payment</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="/admin/" target="_blank" class="btn btn-dark btn-lg w-100 d-flex flex-column align-items-center justify-content-center quick-action-btn">
+                            <i class="fas fa-cog fa-2x mb-2"></i>
+                            <span class="fw-bold fs-5">Admin Panel</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+.quick-action-btn {
+    box-shadow: 0 2px 12px rgba(34,49,63,0.08);
+    border-radius: 1rem !important;
+    padding: 1rem 1rem; /* Half the previous vertical padding */
+    transition: transform 0.12s, box-shadow 0.12s;
+    text-align: center;
+    min-height: 0;
+}
+.quick-action-btn:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 6px 24px rgba(34,49,63,0.16);
+    text-decoration: none;
+}
+.quick-action-btn i {
+    font-size: 2rem !important;
+    margin-bottom: 0.25rem;
+}
+.quick-action-btn span {
+    font-size: 1rem;
+}
+.quick-action-btn.btn-primary {
+    background: #39506a !important;
+    border: none;
+    color: #f8fafd !important;
+}
+.quick-action-btn.btn-primary:hover {
+    background: #22313f !important;
+    color: #7ec0e6 !important;
+}
+.quick-action-btn.btn-success {
+    background: #3b6e5a !important;
+    border: none;
+    color: #f8fafd !important;
+}
+.quick-action-btn.btn-success:hover {
+    background: #29513f !important;
+    color: #b6e6d8 !important;
+}
+.quick-action-btn.btn-info {
+    background: #4a6fa5 !important;
+    border: none;
+    color: #f8fafd !important;
+}
+.quick-action-btn.btn-info:hover {
+    background: #22313f !important;
+    color: #7ec0e6 !important;
+}
+.quick-action-btn.btn-dark {
+    background: #222c36 !important;
+    border: none;
+    color: #f8fafd !important;
+}
+.quick-action-btn.btn-dark:hover {
+    background: #39506a !important;
+    color: #7ec0e6 !important;
+}
+</style>
+{% endblock %} 

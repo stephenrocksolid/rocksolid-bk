@@ -144,17 +144,40 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <!-- Removed brand text/logo from navbar -->
+            <a class="navbar-brand" href="{% url 'bookkeeping:dashboard' %}">
+                <img src="{% static 'bookkeeping/img/RSD_Logo.jpg' %}" alt="RockSolid Data" height="30" class="me-2">
+                RockSolid Data
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/" target="_blank">
-                            <i class="fas fa-cog me-1"></i>Admin
-                        </a>
-                    </li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>{{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'bookkeeping:dashboard' %}">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/" target="_blank">
+                                    <i class="fas fa-cog me-2"></i>Admin
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login
+                            </a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -187,7 +210,7 @@
                     <h6 class="text-muted text-uppercase mb-3">Menu</h6>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'bookkeeping:home' %}">
+                            <a class="nav-link" href="{% url 'bookkeeping:dashboard' %}">
                                 <i class="fas fa-home me-1"></i>Dashboard
                             </a>
                         </li>

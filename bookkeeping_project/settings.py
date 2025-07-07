@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-*gx_)5p3n5$j+)6sbkt=vm*l2l^+qxuf++(atp#@g0g0wom!=#
 DEBUG = True
 
 # ALLOWED_HOSTS = ['167.71.249.156', 'localhost', '127.0.0.1']
-ALLOWED_HOSTS = ['rocksoliddata.solutions', 'www.rocksoliddata.solutions']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'rocksoliddata.solutions', 'www.rocksoliddata.solutions']
 
 # Application definition
 
@@ -124,3 +124,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication settings
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = '/accounts/login/'

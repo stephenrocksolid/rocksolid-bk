@@ -4,8 +4,12 @@ from . import views
 app_name = 'bookkeeping'
 
 urlpatterns = [
-    # Home and Demo
-    path('', views.home, name='home'),
+    # Landing and Dashboard
+    path('', views.home, name='home'),  # Legacy - redirects appropriately
+    path('landing/', views.landing_page, name='landing_page'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    
+    # Demo
     path('htmx-demo/', views.htmx_demo, name='htmx_demo'),
     path('button-click/', views.button_click, name='button_click'),
     
