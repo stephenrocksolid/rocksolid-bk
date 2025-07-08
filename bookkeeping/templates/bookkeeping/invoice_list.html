@@ -2,6 +2,16 @@
 
 {% block title %}Invoices - RockSolid Bookkeeping{% endblock %}
 
+{% block extra_css %}
+<style>
+.btn-tall {
+    height: 1.75rem !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
@@ -119,16 +129,16 @@
                             <td>
                                 <div class="btn-group" role="group">
                                     <a href="{% url 'bookkeeping:invoice_detail' invoice.id %}" 
-                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                       class="btn btn-sm btn-outline-primary btn-tall" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     <a href="{% url 'bookkeeping:invoice_update' invoice.id %}" 
-                                       class="btn btn-sm btn-outline-secondary" title="Edit">
+                                       class="btn btn-sm btn-outline-secondary btn-tall" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     {% if invoice.status != 'paid' %}
                                     <a href="{% url 'bookkeeping:payment_create' %}?invoice={{ invoice.id }}" 
-                                       class="btn btn-sm btn-outline-success" title="Record Payment">
+                                       class="btn btn-sm btn-outline-success btn-tall" title="Record Payment">
                                         <i class="fas fa-credit-card"></i>
                                     </a>
                                     {% endif %}

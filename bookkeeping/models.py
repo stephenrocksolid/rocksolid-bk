@@ -19,7 +19,8 @@ class Customer(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=200, help_text="Company or individual name")
+    name = models.CharField(max_length=200, help_text="Company name")
+    contact_person = models.CharField(max_length=200, blank=True, null=True, help_text="Primary contact person")
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
@@ -68,15 +69,29 @@ class Customer(models.Model):
     @property
     def current_balance(self):
         """Calculate current account balance"""
-        total_invoiced = self.invoices.filter(status__in=['open', 'overdue']).aggregate(
+        # Simple calculation: Total Invoiced - Total Payments
+        total_invoiced = self.invoices.exclude(status='cancelled').aggregate(
             total=models.Sum('total_amount')
         )['total'] or Decimal('0.00')
         
-        total_paid = self.payments.aggregate(
+        total_payments = self.payments.aggregate(
             total=models.Sum('amount')
         )['total'] or Decimal('0.00')
         
-        return total_invoiced - total_paid
+        return total_invoiced - total_payments
+
+
+class InvoiceNumberTracker(models.Model):
+    """Singleton model to track the next invoice number"""
+    next_number = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"Next Invoice Number: {self.next_number}"
+
+    @classmethod
+    def get_solo(cls):
+        obj, created = cls.objects.get_or_create(id=1)
+        return obj
 
 
 class Invoice(models.Model):
@@ -126,20 +141,28 @@ class Invoice(models.Model):
     
     def save(self, *args, **kwargs):
         """Override save to auto-generate invoice number and calculate totals"""
-        if not self.invoice_number:
-            # Generate invoice number (you might want to customize this)
-            last_invoice = Invoice.objects.order_by('-created_at').first()
-            if last_invoice:
-                try:
-                    last_number = int(last_invoice.invoice_number.split('-')[-1])
-                    self.invoice_number = f"INV-{last_number + 1:06d}"
-                except (ValueError, IndexError):
-                    self.invoice_number = "INV-000001"
-            else:
-                self.invoice_number = "INV-000001"
+        skip_calculation = kwargs.pop('skip_calculation', False)
         
-        # Calculate totals
-        self.calculate_totals()
+        if not self.invoice_number:
+            tracker = InvoiceNumberTracker.get_solo()
+            self.invoice_number = str(tracker.next_number)
+            tracker.next_number += 1
+            tracker.save()
+        else:
+            # If manually set and higher than tracker, update tracker
+            try:
+                num = int(str(self.invoice_number))
+                if num > 0:
+                    tracker = InvoiceNumberTracker.get_solo()
+                    if num >= tracker.next_number:
+                        tracker.next_number = num + 1
+                        tracker.save()
+            except (ValueError, TypeError):
+                pass  # Allow non-integer invoice numbers, but don't update tracker
+        
+        # Calculate totals unless skipped
+        if not skip_calculation:
+            self.calculate_totals()
         super().save(*args, **kwargs)
     
     def calculate_totals(self):

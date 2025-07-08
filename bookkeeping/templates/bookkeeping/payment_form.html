@@ -48,11 +48,10 @@
                                 Customer <span class="text-danger">*</span>
                             </label>
                             <select name="customer" id="id_customer" class="form-control"
-                                    hx-get="/api/customer/{value}/balance/partial/"
-                                    hx-target="#customer-balance-info"
+                                    hx-get="/api/customer/invoices/select/partial/"
+                                    hx-target="#invoice-select-wrapper"
                                     hx-trigger="change"
-                                    hx-swap="innerHTML"
-                                    hx-on="htmx:afterRequest:document.getElementById('invoice-balance-info').innerHTML=''">
+                                    hx-include="[name=customer]">
                                 {% for option in form.customer.field.choices %}
                                     <option value="{{ option.0 }}" {% if option.0 == form.customer.value %}selected{% endif %}>{{ option.1 }}</option>
                                 {% endfor %}
@@ -65,13 +64,9 @@
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3" id="invoice-select-wrapper">
                             <label for="{{ form.invoice.id_for_label }}" class="form-label">Invoice (Optional)</label>
-                            <select name="invoice" id="id_invoice" class="form-control"
-                                    hx-get="/api/invoice/{value}/totals/partial/"
-                                    hx-target="#invoice-balance-info"
-                                    hx-trigger="change"
-                                    hx-swap="innerHTML">
+                            <select name="invoice" id="id_invoice" class="form-control">
                                 <option value="">---------</option>
                                 {% for option in form.invoice.field.choices %}
                                     <option value="{{ option.0 }}" {% if option.0 == form.invoice.value %}selected{% endif %}>{{ option.1 }}</option>

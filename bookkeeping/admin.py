@@ -4,13 +4,13 @@ from .models import Customer, Invoice, InvoiceItem, Payment
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ['name', 'email', 'phone', 'current_balance', 'payment_terms', 'is_active', 'created_at']
+    list_display = ['name', 'contact_person', 'email', 'phone', 'current_balance', 'payment_terms', 'is_active', 'created_at']
     list_filter = ['is_active', 'payment_terms', 'created_at']
-    search_fields = ['name', 'email', 'phone', 'tax_id']
+    search_fields = ['name', 'contact_person', 'email', 'phone', 'tax_id']
     readonly_fields = ['id', 'current_balance', 'created_at', 'updated_at']
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'email', 'phone')
+            'fields': ('name', 'contact_person', 'email', 'phone')
         }),
         ('Address', {
             'fields': ('address', 'city', 'state', 'zip_code', 'country'),

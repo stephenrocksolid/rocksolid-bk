@@ -14,6 +14,9 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f8f9fa;
         }
+        .navbar {
+            min-height: 40px !important; /* Double the default 56px height */
+        }
         .navbar-brand {
             font-weight: bold;
             color: #007bff !important;
@@ -144,42 +147,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'bookkeeping:dashboard' %}">
-                <img src="{% static 'bookkeeping/img/RSD_Logo.jpg' %}" alt="RockSolid Data" height="30" class="me-2">
-                RockSolid Data
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if user.is_authenticated %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user me-1"></i>{{ user.username }}
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'bookkeeping:dashboard' %}">
-                                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                                </a></li>
-                                <li><a class="dropdown-item" href="/admin/" target="_blank">
-                                    <i class="fas fa-cog me-2"></i>Admin
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'logout' %}">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                                </a></li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}">
-                                <i class="fas fa-sign-in-alt me-1"></i>Login
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
+            <!-- Empty top bar, no buttons or links -->
         </div>
     </nav>
 
@@ -187,8 +155,8 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-2 col-lg-1 d-none d-md-block sidebar">
-                <div class="p-3">
+            <div class="col-md-2 col-lg-1 d-none d-md-block sidebar position-relative min-vh-100" style="min-height: 100vh;">
+                <div class="p-3 d-flex flex-column h-100" style="padding-bottom: 4rem !important;">
                     <div class="text-center mb-3">
                         <img src="{% static 'bookkeeping/img/RSD_Logo.jpg' %}" alt="Logo" style="width: 140px; max-width: 100%; margin-bottom: 0.5rem;">
                     </div>
@@ -204,11 +172,9 @@
                             <i class="fas fa-credit-card me-1"></i>Record Payment
                         </a>
                     </div>
-                    
                     <hr class="my-3">
-                    
                     <h6 class="text-muted text-uppercase mb-3">Menu</h6>
-                    <ul class="nav flex-column">
+                    <ul class="nav flex-column mb-auto">
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'bookkeeping:dashboard' %}">
                                 <i class="fas fa-home me-1"></i>Dashboard
@@ -230,6 +196,16 @@
                             </a>
                         </li>
                     </ul>
+                    {% if user.is_authenticated %}
+                    <div class="mt-auto w-100 ">
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-light w-100">
+                                <i class="fas fa-sign-out-alt me-1"></i>Logout
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             

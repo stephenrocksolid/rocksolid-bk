@@ -2,6 +2,16 @@
 
 {% block title %}Customers - RockSolid Bookkeeping{% endblock %}
 
+{% block extra_css %}
+<style>
+.btn-tall {
+    height: 1.75rem !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
@@ -69,7 +79,7 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Contact</th>
+                            <th>Email</th>
                             <th>Balance</th>
                             <th>Payment Terms</th>
                             <th>Status</th>
@@ -82,16 +92,12 @@
                         <tr>
                             <td>
                                 <div class="fw-bold">{{ customer.name }}</div>
-                                {% if customer.tax_id %}
-                                    <small class="text-muted">Tax ID: {{ customer.tax_id }}</small>
-                                {% endif %}
                             </td>
                             <td>
                                 {% if customer.email %}
                                     <div><i class="fas fa-envelope me-1"></i>{{ customer.email }}</div>
-                                {% endif %}
-                                {% if customer.phone %}
-                                    <div><i class="fas fa-phone me-1"></i>{{ customer.phone }}</div>
+                                {% else %}
+                                    <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             <td>
@@ -113,19 +119,19 @@
                             <td>
                                 <div class="btn-group" role="group">
                                     <a href="{% url 'bookkeeping:customer_detail' customer.id %}" 
-                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                       class="btn btn-sm btn-outline-primary btn-tall" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     <a href="{% url 'bookkeeping:customer_update' customer.id %}" 
-                                       class="btn btn-sm btn-outline-secondary" title="Edit">
+                                       class="btn btn-sm btn-outline-secondary btn-tall" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <a href="{% url 'bookkeeping:invoice_create' %}?customer={{ customer.id }}" 
-                                       class="btn btn-sm btn-outline-success" title="Create Invoice">
+                                       class="btn btn-sm btn-outline-success btn-tall" title="Create Invoice">
                                         <i class="fas fa-file-invoice"></i>
                                     </a>
                                     <a href="{% url 'bookkeeping:payment_create' %}?customer={{ customer.id }}" 
-                                       class="btn btn-sm btn-outline-info" title="Record Payment">
+                                       class="btn btn-sm btn-outline-info btn-tall" title="Record Payment">
                                         <i class="fas fa-credit-card"></i>
                                     </a>
                                 </div>

@@ -13,12 +13,13 @@ class CustomerForm(ModelForm):
     class Meta:
         model = Customer
         fields = [
-            'name', 'email', 'phone', 'address', 'city', 'state', 
+            'name', 'contact_person', 'email', 'phone', 'address', 'city', 'state', 
             'zip_code', 'country', 'tax_id', 'payment_terms', 
             'credit_limit', 'notes', 'is_active'
         ]
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Company or individual name'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Company name'}),
+            'contact_person': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Primary contact person'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@example.com'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(555) 123-4567'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Street address'}),
@@ -47,10 +48,14 @@ class InvoiceForm(ModelForm):
     class Meta:
         model = Invoice
         fields = [
-            'customer', 'issue_date', 'due_date', 'status', 
+            'invoice_number', 'customer', 'issue_date', 'due_date', 'status', 
             'tax_rate', 'discount_amount', 'finance_charge', 'notes', 'terms'
         ]
         widgets = {
+            'invoice_number': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Enter invoice number or leave blank for auto-generation'
+            }),
             'customer': forms.Select(attrs={'class': 'form-control'}),
             'issue_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'due_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -70,6 +75,17 @@ class InvoiceForm(ModelForm):
             # Default due date based on customer payment terms (30 days if no customer selected)
             self.fields['due_date'].initial = (timezone.now() + timezone.timedelta(days=30)).date()
             self.fields['tax_rate'].initial = Decimal('0.08')  # 8% default tax rate
+            
+            # Set next available invoice number as default
+            from .models import InvoiceNumberTracker
+            tracker = InvoiceNumberTracker.get_solo()
+            self.fields['invoice_number'].initial = tracker.next_number
+            self.fields['invoice_number'].required = False
+            self.fields['invoice_number'].help_text = f'Leave blank to auto-generate the next number ({tracker.next_number}), or enter a custom number.'
+        else:
+            # For existing invoices, show current number
+            self.fields['invoice_number'].required = False
+            self.fields['invoice_number'].help_text = 'Enter the invoice number for this invoice.'
     
     def clean(self):
         """Validate invoice dates and amounts"""
@@ -145,17 +161,13 @@ class PaymentForm(ModelForm):
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Payment notes'}),
         }
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, invoice_queryset=None, **kwargs):
         super().__init__(*args, **kwargs)
-        # Set default payment date and method
+        if invoice_queryset is not None:
+            self.fields['invoice'].queryset = invoice_queryset
         if not self.instance.pk:
             self.fields['payment_date'].initial = timezone.now().date()
             self.fields['payment_method'].initial = 'check'  # Default to check
-        
-        # Filter invoices to only show unpaid ones
-        self.fields['invoice'].queryset = Invoice.objects.filter(
-            status__in=['open', 'overdue']
-        ).select_related('customer')
     
     def clean_amount(self):
         """Validate payment amount is positive"""

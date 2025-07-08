@@ -100,13 +100,19 @@
                         <h6 class="text-primary mb-3">Customer Information</h6>
                         <table class="table table-borderless">
                             <tr>
-                                <td class="fw-bold">Customer:</td>
+                                <td class="fw-bold">Company:</td>
                                 <td>
                                     <a href="{% url 'bookkeeping:customer_detail' invoice.customer.id %}" class="text-decoration-none">
                                         {{ invoice.customer.name }}
                                     </a>
                                 </td>
                             </tr>
+                            {% if invoice.customer.contact_person %}
+                            <tr>
+                                <td class="fw-bold">Contact Person:</td>
+                                <td>{{ invoice.customer.contact_person }}</td>
+                            </tr>
+                            {% endif %}
                             <tr>
                                 <td class="fw-bold">Email:</td>
                                 <td>{{ invoice.customer.email|default:"-" }}</td>

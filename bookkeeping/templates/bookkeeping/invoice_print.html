@@ -184,6 +184,9 @@
         <div class="billto-block">
             <div class="billto-label">Bill To</div>
             <div>{{ invoice.customer.name }}</div>
+            {% if invoice.customer.contact_person %}
+            <div>{{ invoice.customer.contact_person }}</div>
+            {% endif %}
             <div>{{ invoice.customer.address|default:'-' }}</div>
             <div>{{ invoice.customer.city|default:'' }}{% if invoice.customer.city and invoice.customer.zip_code %}, {% endif %}{{ invoice.customer.zip_code|default:'' }}</div>
             <div>{{ invoice.customer.phone|default:'-' }}</div>

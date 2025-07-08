@@ -89,9 +89,16 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <strong>Name:</strong><br>
+                    <strong>Company Name:</strong><br>
                     {{ customer.name }}
                 </div>
+                
+                {% if customer.contact_person %}
+                <div class="mb-3">
+                    <strong>Contact Person:</strong><br>
+                    {{ customer.contact_person }}
+                </div>
+                {% endif %}
                 
                 {% if customer.email %}
                 <div class="mb-3">

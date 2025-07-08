@@ -2,6 +2,16 @@
 
 {% block title %}Payments - RockSolid Bookkeeping{% endblock %}
 
+{% block extra_css %}
+<style>
+.btn-tall {
+    height: 1.75rem !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
@@ -109,12 +119,12 @@
                             <td>
                                 <div class="btn-group" role="group">
                                     <a href="{% url 'bookkeeping:customer_detail' payment.customer.id %}" 
-                                       class="btn btn-sm btn-outline-primary" title="View Customer">
+                                       class="btn btn-sm btn-outline-primary btn-tall" title="View Customer">
                                         <i class="fas fa-user"></i>
                                     </a>
                                     {% if payment.invoice %}
                                     <a href="{% url 'bookkeeping:invoice_detail' payment.invoice.id %}" 
-                                       class="btn btn-sm btn-outline-info" title="View Invoice">
+                                       class="btn btn-sm btn-outline-info btn-tall" title="View Invoice">
                                         <i class="fas fa-file-invoice"></i>
                                     </a>
                                     {% endif %}
