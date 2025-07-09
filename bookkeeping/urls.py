@@ -24,6 +24,7 @@ urlpatterns = [
     path('invoices/create/', views.invoice_create, name='invoice_create'),
     path('invoices/<uuid:invoice_id>/', views.invoice_detail, name='invoice_detail'),
     path('invoices/<uuid:invoice_id>/edit/', views.invoice_update, name='invoice_update'),
+    path('invoices/<uuid:invoice_id>/delete/', views.invoice_delete, name='invoice_delete'),
     path('invoices/<uuid:invoice_id>/print/', views.invoice_print, name='invoice_print'),
     path('invoices/<uuid:invoice_id>/pdf/', views.invoice_pdf, name='invoice_pdf'),
     
@@ -34,7 +35,10 @@ urlpatterns = [
     # HTMX/AJAX endpoints
     path('api/customer/<uuid:customer_id>/balance/partial/', views.get_customer_balance_partial, name='get_customer_balance_partial'),
     path('api/customer/<uuid:customer_id>/invoices/partial/', views.get_customer_invoices_partial, name='get_customer_invoices_partial'),
+    path('api/customer/invoices/partial/', views.get_customer_invoices_select_partial, name='get_customer_invoices_select_partial'),
+    path('api/customer/invoices/select/partial/', views.get_customer_invoices_select_partial, name='get_customer_invoices_select_partial'),
     path('api/invoice/<uuid:invoice_id>/totals/partial/', views.get_invoice_totals_partial, name='get_invoice_totals_partial'),
+    path('api/invoice/<uuid:invoice_id>/data/json/', views.get_invoice_data_json, name='get_invoice_data_json'),
     path('api/customer/<uuid:customer_id>/due-date/partial/', views.get_customer_due_date_partial, name='get_customer_due_date_partial'),
     path('api/customer/<uuid:customer_id>/terms/partial/', views.get_customer_terms_partial, name='get_customer_terms_partial'),
     path('api/invoice/calculate-totals/partial/', views.calculate_invoice_totals_partial, name='calculate_invoice_totals_partial'),

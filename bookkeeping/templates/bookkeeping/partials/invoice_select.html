@@ -1,0 +1,17 @@
+<div class="col-md-6 mb-3" id="invoice-select-wrapper">
+    <label for="{{ form.invoice.id_for_label }}" class="form-label">Invoice (Optional)</label>
+    <select name="invoice" id="id_invoice" class="form-control">
+        <option value="">---------</option>
+        {% for option in form.invoice.field.choices %}
+            <option value="{{ option.0 }}" {% if option.0 == form.invoice.value %}selected{% endif %}>{{ option.1 }}</option>
+        {% endfor %}
+    </select>
+    {% if form.invoice.errors %}
+        <div class="invalid-feedback d-block">
+            {% for error in form.invoice.errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+    {% endif %}
+    <small class="form-text text-muted">Leave blank for general payment</small>
+</div> 

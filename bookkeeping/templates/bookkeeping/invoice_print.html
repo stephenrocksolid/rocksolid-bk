@@ -15,7 +15,7 @@
             color: #111;
             margin: 0;
             padding: 0;
-            font-size: 12pt;
+            font-size: 10pt;
         }
         .invoice-wrap {
             background: #fff;
@@ -39,18 +39,18 @@
             margin-bottom: 12px;
         }
         .company-name {
-            font-size: 14pt;
+            font-size: 12pt;
             font-weight: 700;
             margin-bottom: 2px;
         }
         .invoice-title {
-            font-size: 24pt;
+            font-size: 22pt;
             font-weight: 700;
             text-align: right;
             margin-bottom: 0.5rem;
         }
         .invoice-number {
-            font-size: 12pt;
+            font-size: 10pt;
             color: #222;
             text-align: right;
         }
@@ -63,7 +63,7 @@
             min-width: 260px;
         }
         .billto-label {
-            font-size: 13pt;
+            font-size: 11pt;
             font-weight: 700;
             margin-bottom: 8px;
         }
@@ -73,7 +73,7 @@
         .dates-block .label {
             font-weight: 700;
             margin-right: 8px;
-            font-size: 12pt;
+            font-size: 10pt;
         }
         .items-table {
             width: 100%;
@@ -83,12 +83,12 @@
         .items-table th, .items-table td {
             padding: 12px 8px;
             text-align: left;
-            font-size: 12pt;
+            font-size: 10pt;
         }
         .items-table th {
             border-bottom: 2px solid #222;
             font-weight: 700;
-            font-size: 13pt;
+            font-size: 11pt;
         }
         .items-table td {
             border-bottom: 1px solid #e0e0e0;
@@ -105,7 +105,7 @@
         .summary-table td {
             padding: 8px 12px;
             border-bottom: 1px solid #888;
-            font-size: 12pt;
+            font-size: 10pt;
         }
         .summary-table tr:last-child td {
             border-bottom: none;
@@ -114,20 +114,24 @@
             background: #f7f71a;
             font-weight: 700;
             color: #111;
-            font-size: 13pt;
+            font-size: 11pt;
         }
         .summary-table .label {
             font-weight: 700;
-            font-size: 12pt;
+            font-size: 10pt;
         }
         .terms {
             margin-top: 48px;
-            font-size: 13pt;
+            font-size: 11pt;
             font-weight: 700;
         }
         .terms span {
             font-weight: 400;
-            font-size: 12pt;
+            font-size: 10pt;
+        }
+        .summary-table .highlight-red {
+            background: #ffd6d6 !important;
+            color: #a00 !important;
         }
         @media print {
             body, .invoice-wrap {
@@ -143,6 +147,7 @@
             }
         }
     </style>
+
     {% if pdf_mode %}
     <style>
         .company-name { font-size: 12pt !important; }
@@ -162,6 +167,7 @@
         .terms span { font-size: 10pt !important; }
     </style>
     {% endif %}
+
     <script>
         window.onload = function() {
             window.print();
@@ -187,9 +193,15 @@
             {% if invoice.customer.contact_person %}
             <div>{{ invoice.customer.contact_person }}</div>
             {% endif %}
-            <div>{{ invoice.customer.address|default:'-' }}</div>
-            <div>{{ invoice.customer.city|default:'' }}{% if invoice.customer.city and invoice.customer.zip_code %}, {% endif %}{{ invoice.customer.zip_code|default:'' }}</div>
-            <div>{{ invoice.customer.phone|default:'-' }}</div>
+            {% if invoice.customer.address %}
+            <div>{{ invoice.customer.address }}</div>
+            {% endif %}
+            {% if invoice.customer.city or invoice.customer.zip_code %}
+            <div>{% if invoice.customer.city %}{{ invoice.customer.city }}{% endif %}{% if invoice.customer.city and invoice.customer.zip_code %}, {% endif %}{% if invoice.customer.zip_code %}{{ invoice.customer.zip_code }}{% endif %}</div>
+            {% endif %}
+            {% if invoice.customer.phone %}
+            <div>{{ invoice.customer.phone }}</div>
+            {% endif %}
         </div>
         <div class="dates-block">
             <div><span class="label">Date</span> {{ invoice.issue_date|date:'d M, Y' }}</div>
@@ -235,7 +247,9 @@
         </tr>
         <tr>
             <td class="label">Account Balance</td>
-            <td class="text-right">${{ invoice.customer.current_balance|default:'0.00'|floatformat:2 }}</td>
+            <td class="text-right {% if invoice.account_balance_including_current > balance_due %}highlight-red{% endif %}">
+                ${{ invoice.account_balance_including_current|default:'0.00'|floatformat:2 }}
+            </td>
         </tr>
     </table>
     <div class="terms">

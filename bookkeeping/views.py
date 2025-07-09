@@ -31,7 +31,9 @@ def dashboard(request):
     # Get summary statistics
     total_customers = Customer.objects.filter(is_active=True).count()
     total_invoices = Invoice.objects.count()
-    total_receivables = Invoice.objects.filter(status__in=['open', 'overdue']).aggregate(
+    total_receivables = Invoice.objects.filter(
+        status__in=['open', 'overdue']
+    ).aggregate(
         total=Sum('total_amount')
     )['total'] or Decimal('0.00')
     
@@ -200,9 +202,8 @@ def invoice_list(request):
     if date_to:
         invoices = invoices.filter(issue_date__lte=date_to)
     
-    # Sort options
-    sort_by = request.GET.get('sort', '-issue_date')
-    invoices = invoices.order_by(sort_by)
+    # Always sort by invoice_number descending
+    invoices = invoices.order_by('-invoice_number')
     
     # Pagination
     paginator = Paginator(invoices, 20)
@@ -215,7 +216,7 @@ def invoice_list(request):
         'customer_filter': customer_filter,
         'date_from': date_from,
         'date_to': date_to,
-        'sort_by': sort_by,
+        'sort_by': '-invoice_number',
     }
     return render(request, 'bookkeeping/invoice_list.html', context)
 
@@ -333,6 +334,35 @@ def invoice_pdf(request, invoice_id):
     return response
 
 
+@login_required
+def invoice_delete(request, invoice_id):
+    """Delete an invoice"""
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    
+    if request.method == 'POST':
+        # Check if invoice can be deleted (no payments made)
+        if invoice.paid_amount > 0:
+            messages.error(request, f'Cannot delete invoice {invoice.invoice_number} because payments have been made. Consider cancelling the invoice instead.')
+            return redirect('bookkeeping:invoice_detail', invoice_id=invoice.id)
+        
+        # Store invoice number for success message
+        invoice_number = invoice.invoice_number
+        customer_name = invoice.customer.name
+        
+        # Delete the invoice
+        invoice.delete()
+        
+        messages.success(request, f'Invoice {invoice_number} for {customer_name} has been deleted successfully.')
+        return redirect('bookkeeping:invoice_list')
+    
+    # GET request - show confirmation page
+    context = {
+        'invoice': invoice,
+        'title': f'Delete Invoice: {invoice.invoice_number}'
+    }
+    return render(request, 'bookkeeping/invoice_delete.html', context)
+
+
 # Payment Views
 @login_required
 def payment_list(request):
@@ -370,27 +400,31 @@ def payment_list(request):
 @login_required
 def payment_create(request):
     """Create a new payment"""
+    customer_id = request.GET.get('customer_id') or None
+    invoices = Invoice.objects.none()
+    if customer_id:
+        invoices = Invoice.objects.filter(customer_id=customer_id, status__in=["open", "overdue"]).order_by('-issue_date')
+    else:
+        invoices = Invoice.objects.filter(status__in=["open", "overdue"]).order_by('-issue_date')
+
     if request.method == 'POST':
-        form = PaymentForm(request.POST)
+        form = PaymentForm(request.POST, invoice_queryset=invoices)
         if form.is_valid():
             payment = form.save(commit=False)
             payment.created_by = request.user
             payment.save()
-            
             # Check for overpayment
             overpayment = form.cleaned_data.get('overpayment', 0)
             if overpayment > 0:
                 messages.warning(request, f'Payment recorded with ${overpayment:.2f} overpayment. This will be applied as a credit to the customer account.')
             else:
                 messages.success(request, f'Payment of ${payment.amount} recorded successfully.')
-            
             return redirect('bookkeeping:payment_list')
         else:
-            # Form is invalid, render with errors
             messages.error(request, 'Please correct the errors below.')
     else:
-        form = PaymentForm()
-    
+        form = PaymentForm(invoice_queryset=invoices)
+
     context = {'form': form, 'title': 'Record Payment'}
     return render(request, 'bookkeeping/payment_form.html', context)
 
@@ -427,6 +461,19 @@ def get_customer_invoices_partial(request, customer_id):
     invoices = Invoice.objects.filter(customer_id=customer_id, status__in=["open", "overdue"]).order_by('-issue_date')
     html = render_to_string('bookkeeping/partials/invoice_options.html', {'invoices': invoices})
     return HttpResponse(html)
+
+
+@require_http_methods(["GET"])
+@login_required
+def get_customer_invoices_select_partial(request):
+    """HTMX partial: return invoice select for a given customer (open/overdue only)"""
+    customer_id = request.GET.get('customer_id')
+    invoices = Invoice.objects.none()
+    if customer_id:
+        invoices = Invoice.objects.filter(customer_id=customer_id, status__in=["open", "overdue"]).order_by('-issue_date')
+    form = PaymentForm(invoice_queryset=invoices)
+    context = {'form': form}
+    return render(request, 'bookkeeping/partials/invoice_select.html', context)
 
 
 @require_http_methods(["GET"])
@@ -515,10 +562,27 @@ def get_customer_terms_partial(request, customer_id):
     base_terms = payment_terms_map.get(customer.payment_terms, 'Payment is due within 30 days of invoice date.')
     
     # Add finance charge information
-    finance_charge_text = ' A 1.5% finance charge will be applied to all balances past due.'
+    finance_charge_text = ' A 1.5% monthly finance charge will be applied to all balances past due.'
     terms = base_terms + finance_charge_text
     
     html = render_to_string('bookkeeping/partials/terms.html', {
         'terms': terms
     })
     return HttpResponse(html)
+
+
+@require_http_methods(["GET"])
+@login_required
+def get_invoice_data_json(request, invoice_id):
+    """Return invoice data as JSON for payment form auto-population"""
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    data = {
+        'balance_due': float(invoice.balance_due),
+        'total_amount': float(invoice.total_amount),
+        'amount_paid': float(invoice.paid_amount),
+        'subtotal': float(invoice.subtotal),
+        'tax_amount': float(invoice.tax_amount),
+        'invoice_number': invoice.invoice_number,
+        'due_date': invoice.due_date.isoformat() if invoice.due_date else None,
+    }
+    return JsonResponse(data)

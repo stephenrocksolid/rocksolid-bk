@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const customerSelect = document.getElementById('id_customer');
     const dueDateInput = document.getElementById('id_due_date');
     const issueDateInput = document.getElementById('id_issue_date');
+    const setTodayBtn = document.getElementById('set-today-btn');
 
     // Add new item row to the table
     addItemBtn.addEventListener('click', function() {
@@ -68,6 +69,9 @@ document.addEventListener('DOMContentLoaded', function() {
             subtotal += total;
         });
 
+        // Calculate finance charge if enabled
+        calculateFinanceCharge(subtotal);
+
         // Update sidebar figures
         const taxRate = parseFloat(document.getElementById('id_tax_rate').value) || 0;
         const discount = parseFloat(document.getElementById('id_discount_amount').value) || 0;
@@ -80,11 +84,90 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('total-display').textContent  = '$' + grandTotal.toFixed(2);
     }
 
+    // Calculate finance charge based on due date and enable checkbox
+    function calculateFinanceCharge(subtotal) {
+        const enableFinanceCharge = document.getElementById('id_enable_finance_charge');
+        const financeChargeInput = document.getElementById('id_finance_charge');
+        const dueDateInput = document.getElementById('id_due_date');
+        const taxRate = parseFloat(document.getElementById('id_tax_rate').value) || 0;
+        const discount = parseFloat(document.getElementById('id_discount_amount').value) || 0;
+        const helpText = document.getElementById('finance-charge-help');
+
+        if (!enableFinanceCharge || !financeChargeInput || !dueDateInput) return;
+
+        if (enableFinanceCharge.checked) {
+            const dueDate = new Date(dueDateInput.value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset time to start of day
+            
+            const daysPastDue = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
+            
+            if (daysPastDue > 0) {
+                // Calculate finance charge (1.5% of the remaining balance)
+                const taxAmount = (subtotal - discount) * taxRate;
+                const balanceDue = subtotal + taxAmount - discount;
+                
+                if (balanceDue > 0) {
+                    const financeCharge = balanceDue * 0.015; // 1.5%
+                    financeChargeInput.value = financeCharge.toFixed(2);
+                    helpText.textContent = `Calculated automatically: ${daysPastDue} days past due (1.5% of balance)`;
+                    helpText.className = 'form-text text-warning';
+                } else {
+                    financeChargeInput.value = '0.00';
+                    helpText.textContent = 'No balance due - no finance charge applied';
+                    helpText.className = 'form-text text-success';
+                }
+            } else {
+                financeChargeInput.value = '0.00';
+                const daysUntilDue = Math.abs(daysPastDue);
+                helpText.textContent = `Invoice not yet due (${daysUntilDue} days until due)`;
+                helpText.className = 'form-text text-info';
+            }
+        } else {
+            financeChargeInput.value = '0.00';
+            helpText.textContent = 'Finance charge disabled';
+            helpText.className = 'form-text text-muted';
+        }
+    }
+
     // Initial listeners and calculation
     document.querySelectorAll('.quantity-input, .price-input').forEach(el => el.addEventListener('input', calculateItemTotals));
     document.getElementById('id_tax_rate').addEventListener('input', calculateItemTotals);
     document.getElementById('id_discount_amount').addEventListener('input', calculateItemTotals);
     document.getElementById('id_finance_charge').addEventListener('input', calculateItemTotals);
+    
+    // Add listeners for finance charge calculation
+    const enableFinanceChargeCheckbox = document.getElementById('id_enable_finance_charge');
+    
+    if (enableFinanceChargeCheckbox) {
+        enableFinanceChargeCheckbox.addEventListener('change', function() {
+            const rows = tbody.getElementsByClassName('invoice-item-row');
+            let subtotal = 0;
+            Array.from(rows).forEach(row => {
+                const qty = parseFloat(row.querySelector('.quantity-input').value) || 0;
+                const price = parseFloat(row.querySelector('.price-input').value) || 0;
+                subtotal += qty * price;
+            });
+            calculateFinanceCharge(subtotal);
+            calculateItemTotals();
+        });
+    }
+    
+    // Add finance charge calculation to existing due date listener
+    if (dueDateInput) {
+        const originalChangeHandler = dueDateInput.onchange;
+        dueDateInput.addEventListener('change', function() {
+            const rows = tbody.getElementsByClassName('invoice-item-row');
+            let subtotal = 0;
+            Array.from(rows).forEach(row => {
+                const qty = parseFloat(row.querySelector('.quantity-input').value) || 0;
+                const price = parseFloat(row.querySelector('.price-input').value) || 0;
+                subtotal += qty * price;
+            });
+            calculateFinanceCharge(subtotal);
+            calculateItemTotals();
+        });
+    }
     
     // Hide existing DELETE checkboxes and add delete button listeners
     document.querySelectorAll('input[name*="-DELETE"]').forEach(checkbox => {
@@ -101,15 +184,70 @@ document.addEventListener('DOMContentLoaded', function() {
     
     calculateItemTotals();
 
-    // Customer / Issue-date change triggers payment-terms HTMX request
-    function refreshPaymentTerms() {
-        const customerId = customerSelect.value;
-        if (!customerId) return;
-        const issueDate = issueDateInput.value;
-        const url = `/api/customer/${customerId}/payment-terms/partial/?issue_date=${issueDate}`;
-        htmx.ajax('GET', url, { target: '#payment-terms-container', swap: 'innerHTML' });
+    // Listen for customer selection changes
+    customerSelect.addEventListener('change', function() {
+        updateDueDate();
+        updateTerms();
+    });
+
+    // Also update when issue date changes (if customer is already selected)
+    issueDateInput.addEventListener('change', function() {
+        if (customerSelect.value) {
+            updateDueDate();
+        }
+    });
+
+    if (setTodayBtn && issueDateInput) {
+        setTodayBtn.addEventListener('click', function() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            issueDateInput.value = `${yyyy}-${mm}-${dd}`;
+            // Trigger due date calculation
+            if (customerSelect.value) {
+                updateDueDate();
+            }
+        });
     }
 
-    customerSelect.addEventListener('change', refreshPaymentTerms);
-    issueDateInput.addEventListener('change', refreshPaymentTerms);
+    // Autofill Issue Date with today if empty (for new invoices)
+    if (issueDateInput && !issueDateInput.value) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        issueDateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
 }); 
+
+function updateDueDate() {
+    const customerId = customerSelect.value;
+    const issueDate = issueDateInput.value;
+    if (customerId && issueDate) {
+        const url = `/api/customer/${customerId}/due-date/partial/?issue_date=${issueDate}`;
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                const container = document.getElementById('due-date-container');
+                if (container) {
+                    container.innerHTML = html;
+                }
+            });
+    }
+}
+
+function updateTerms() {
+    const customerId = customerSelect.value;
+    if (customerId) {
+        const url = `/api/customer/${customerId}/terms/partial/`;
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                const container = document.getElementById('terms-container');
+                if (container) {
+                    container.innerHTML = html;
+                }
+            });
+    }
+} 

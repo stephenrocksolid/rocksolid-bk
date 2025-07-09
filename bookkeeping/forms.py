@@ -41,6 +41,12 @@ class CustomerForm(ModelForm):
             raise ValidationError('Credit limit cannot be negative.')
         return credit_limit
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Check if this is a new instance (not saved to database)
+        if not hasattr(self.instance, '_state') or self.instance._state.adding:
+            self.fields['payment_terms'].initial = 'net_15'
+
 
 class InvoiceForm(ModelForm):
     """Form for creating and editing invoices"""
@@ -49,7 +55,7 @@ class InvoiceForm(ModelForm):
         model = Invoice
         fields = [
             'invoice_number', 'customer', 'issue_date', 'due_date', 'status', 
-            'tax_rate', 'discount_amount', 'finance_charge', 'notes', 'terms'
+            'tax_rate', 'discount_amount', 'finance_charge', 'enable_finance_charge', 'notes', 'terms'
         ]
         widgets = {
             'invoice_number': forms.TextInput(attrs={
@@ -63,6 +69,7 @@ class InvoiceForm(ModelForm):
             'tax_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'min': '0', 'max': '1'}),
             'discount_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'finance_charge': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'enable_finance_charge': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Invoice notes'}),
             'terms': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Payment terms and conditions'}),
         }
